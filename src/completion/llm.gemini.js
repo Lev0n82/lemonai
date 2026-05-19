@@ -4,8 +4,8 @@ const axios = require('axios');
 const fs = require('node:fs');
 const net = require('node:net');
 
-const PROXY_PORT = 7890;
-const PROXY_PROTOCOL = 'http';
+const DEFAULT_PROXY_PORT = 7890;
+const DEFAULT_PROXY_PROTOCOL = 'http';
 const PROXY_CONNECT_TIMEOUT = 1500;
 
 /**
@@ -46,27 +46,63 @@ async function checkProxyConnectivity(host, port) {
   });
 }
 
-const axiosInstancePromise = (async () => {
-  const isInDocker = amInDockerEnvironment();
-  const proxyHost = isInDocker ? 'host.docker.internal' : '127.0.0.1';
+let axiosInstancePromise = null;
 
-  console.log(`[Axios Init] ENV: ${isInDocker ? 'Docker' : '宿主机'}. 代理主机: ${proxyHost}:${PROXY_PORT}`);
+function parseProxyEnv(proxyEnvValue) {
+  if (!proxyEnvValue) return null;
 
-  const isProxyReachable = await checkProxyConnectivity(proxyHost, PROXY_PORT);
-
-  if (isProxyReachable) {
-    const proxyConfig = {
-      protocol: PROXY_PROTOCOL,
-      host: proxyHost,
-      port: PROXY_PORT,
+  try {
+    const raw = proxyEnvValue.includes('://') ? proxyEnvValue : `http://${proxyEnvValue}`;
+    const u = new URL(raw);
+    return {
+      protocol: (u.protocol || `${DEFAULT_PROXY_PROTOCOL}:`).replace(':', ''),
+      host: u.hostname,
+      port: Number(u.port || DEFAULT_PROXY_PORT),
     };
-    console.log(`[Axios 初始化] 代理 ${proxyHost}:${PROXY_PORT} 可连接。创建带代理的 Axios 实例。`);
-    return axios.create({ proxy: proxyConfig });
-  } else {
-    console.warn(`[Axios 初始化] 代理 ${proxyHost}:${PROXY_PORT} 不可连接。创建不带代理的 Axios 实例。`);
-    return axios.create();
+  } catch (error) {
+    return null;
   }
-})();
+}
+
+function resolveProxyConfig() {
+  const proxyFromUrl = parseProxyEnv(process.env.HTTPS_PROXY || process.env.HTTP_PROXY);
+  if (proxyFromUrl) return proxyFromUrl;
+
+  if (process.env.PROXY_HOST) {
+    return {
+      protocol: process.env.PROXY_PROTOCOL || DEFAULT_PROXY_PROTOCOL,
+      host: process.env.PROXY_HOST,
+      port: Number(process.env.PROXY_PORT || process.env.PROXY_PROT || DEFAULT_PROXY_PORT),
+    };
+  }
+
+  return null;
+}
+
+function getAxiosInstance() {
+  if (!axiosInstancePromise) {
+    axiosInstancePromise = (async () => {
+      const proxyConfig = resolveProxyConfig();
+      if (!proxyConfig) {
+        return axios.create();
+      }
+
+      const isInDocker = amInDockerEnvironment();
+      console.log(`[Axios Init] ENV: ${isInDocker ? 'Docker' : '宿主机'}. 代理主机: ${proxyConfig.host}:${proxyConfig.port}`);
+
+      const isProxyReachable = await checkProxyConnectivity(proxyConfig.host, proxyConfig.port);
+      if (isProxyReachable) {
+        console.log(`[Axios 初始化] 代理 ${proxyConfig.host}:${proxyConfig.port} 可连接。创建带代理的 Axios 实例。`);
+        return axios.create({ proxy: proxyConfig });
+      }
+
+      console.warn(`[Axios 初始化] 代理 ${proxyConfig.host}:${proxyConfig.port} 不可连接。创建不带代理的 Axios 实例。`);
+      return axios.create();
+    })();
+  }
+
+  return axiosInstancePromise;
+}
 
 class GeminiLLM extends BaseLLM {
 
@@ -87,7 +123,7 @@ class GeminiLLM extends BaseLLM {
     // const { model = 'gemini-pro' } = options;
     const model = this.model;
 
-    const instance = await axiosInstancePromise;
+    const instance = await getAxiosInstance();
 
     // reference: https://ai.google.dev/gemini-api/docs/get-started/tutorial?lang=rest#stream_generate_content
     //如果message第一条是system 推出messages里的第一条为systemPrompt
