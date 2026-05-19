@@ -1,21 +1,22 @@
 {
+  "ignoreDeprecations": "6.0",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@src/*": [
-        "src/*"
+        "./src/*"
       ],
       // Optional: set alias for type folders
       "@types/*": [
-        "types/*"
+        "./types/*"
       ],
     },
     "checkJs": true,
     "target": "es2020",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "node16",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
+    "ignoreDeprecations": "6.0",
   },
   "include": [
     "**/*.js",
