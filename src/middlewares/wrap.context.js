@@ -20,6 +20,10 @@ const responseWrap = (response) => {
       this.body = res;
       this.status = status;
     };
+
+    response.error = function (msg = "接口错误", data = null, status = 200) {
+      return response.fail.call(this, data, msg, status);
+    };
   
     response.file = function (fileName, stream) {
       // process Content-Type by file type

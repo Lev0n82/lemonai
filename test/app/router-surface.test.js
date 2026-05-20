@@ -247,6 +247,29 @@ describe('Koa app router surface', () => {
     });
   });
 
+  it('returns wrapped failure data when editor update misses file input', async () => {
+    const app = loadTestApp({
+      Platform: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+      Model: { findOne: sinon.stub(), destroy: sinon.stub() },
+      checkLlmApiAvailability: sinon.stub(),
+      DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
+      updateDefaultModel: sinon.stub(),
+      UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+    });
+
+    const response = await request(app.callback())
+      .put('/api/file/editor')
+      .send({ conversation_id: 'conv-1' });
+
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      code: 1,
+      msg: 'Missing file',
+      data: null,
+    });
+  });
+
   it('returns wrapped failure data when file read misses a path', async () => {
     const app = loadTestApp({
       Platform: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
@@ -266,6 +289,51 @@ describe('Koa app router surface', () => {
     expect(response.body).to.deep.equal({
       code: 1,
       msg: 'File path is required',
+      data: null,
+    });
+  });
+
+  it('returns wrapped failure data when file update misses required fields', async () => {
+    const app = loadTestApp({
+      Platform: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+      Model: { findOne: sinon.stub(), destroy: sinon.stub() },
+      checkLlmApiAvailability: sinon.stub(),
+      DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
+      updateDefaultModel: sinon.stub(),
+      UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+    });
+
+    const response = await request(app.callback())
+      .put('/api/file')
+      .send({ id: 1 });
+
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      code: 1,
+      msg: 'Missing id or conversation_id',
+      data: null,
+    });
+  });
+
+  it('returns wrapped failure data when deleting a missing file', async () => {
+    const app = loadTestApp({
+      Platform: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+      Model: { findOne: sinon.stub(), destroy: sinon.stub() },
+      checkLlmApiAvailability: sinon.stub(),
+      DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
+      updateDefaultModel: sinon.stub(),
+      UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub().resolves(null), findAll: sinon.stub(), create: sinon.stub() },
+    });
+
+    const response = await request(app.callback())
+      .delete('/api/file/delete/42');
+
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      code: 1,
+      msg: 'File does not exist',
       data: null,
     });
   });

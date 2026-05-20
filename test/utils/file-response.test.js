@@ -27,7 +27,7 @@ describe('file response helpers', () => {
   });
 
   describe('wrap.context response.file', () => {
-    it('adds success, fail, and file helpers onto the response object', async () => {
+    it('adds success, fail, error, and file helpers onto the response object', async () => {
       const headers = {};
       const ctx = {
         response: {
@@ -41,7 +41,26 @@ describe('file response helpers', () => {
 
       expect(ctx.response.success).to.be.a('function');
       expect(ctx.response.fail).to.be.a('function');
+      expect(ctx.response.error).to.be.a('function');
       expect(ctx.response.file).to.be.a('function');
+    });
+
+    it('maps response.error to the wrapped failure contract', async () => {
+      const ctx = {
+        response: {
+          set() {}
+        }
+      };
+
+      await wrapContext(ctx, async () => {});
+      ctx.response.error('Missing file');
+
+      expect(ctx.response.status).to.equal(200);
+      expect(ctx.response.body).to.deep.equal({
+        data: null,
+        code: 1,
+        msg: 'Missing file',
+      });
     });
 
     it('sets download headers and body when sending a file response', async () => {
