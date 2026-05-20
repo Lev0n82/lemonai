@@ -124,19 +124,19 @@ router.post("/upload", async ({ state, request, response }) => {
 router.put("/", async ({ request, response }) => {
   const { id, conversation_id } = request.body || {};
   if (!id || !conversation_id) {
-    return response.error("Missing id or conversation_id");
+    return response.fail(null, "Missing id or conversation_id");
   }
 
   try {
     const file = await File.findOne({ where: { id } });
     if (!file) {
-      return response.error("File does not exist");
+      return response.fail(null, "File does not exist");
     }
     file.conversation_id = conversation_id;
     await file.save();
     return response.success(file, "File updated successfully");
   } catch (error) {
-    return response.fail("Failed to update file");
+    return response.fail(null, "Failed to update file");
   }
 });
 
@@ -185,7 +185,7 @@ router.delete("/delete/:file_id", async ({ state, params, request, response }) =
       where: { id: file_id }
     });
     if (!file) {
-      return response.error("File does not exist");
+      return response.fail(null, "File does not exist");
     }
     await file.destroy();
 
@@ -201,7 +201,7 @@ router.delete("/delete/:file_id", async ({ state, params, request, response }) =
     return response.success(null, "File deleted successfully");
   } catch (error) {
     console.error(error);
-    return response.error("Failed to delete file");
+    return response.fail(null, "Failed to delete file");
   }
 });
 
