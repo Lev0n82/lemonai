@@ -10,7 +10,6 @@ To use Ollama as the active model provider, configure:
 2. Provider API URL: set to your Ollama-compatible endpoint.
 3. Provider API key: set your Ollama key/token if required by your endpoint.
 4. Default model settings: set assistant/topic_naming/translation defaults to an Ollama model.
-5. Environment model hint: set `LLM_MODEL` in `.env`.
 
 ## 2) Where API key details are stored
 
@@ -68,11 +67,15 @@ Use these backend routes to configure instead of editing DB directly:
 
 ## 4) Environment values to set
 
-- File: `.env`
-- Minimum setting:
-  - `LLM_MODEL=glm-5.1:cloud` (or your chosen Ollama model)
+There is currently no runtime environment variable in this codebase that selects the active Ollama model.
 
-Note: `.env` is not the authoritative source for provider key/url in this project. Provider key/url come from DB (`platform.api_key`, `platform.api_url`).
+The runtime source of truth is the database-backed configuration:
+
+- provider URL and key from `platform.api_url` and `platform.api_key`
+- active provider from `platform.is_enabled`
+- selected assistant/topic_naming/translation model from `default_model_setting.model_id`
+
+If you need to change the active model, update the database through the existing API routes documented above rather than setting `.env`.
 
 ## 5) Safe handling of API keys
 
@@ -87,7 +90,7 @@ Note: `.env` is not the authoritative source for provider key/url in this projec
 2. `platform.api_url` points to your Ollama endpoint.
 3. `platform.api_key` set only in local DB (or via secured API flow).
 4. Default assistant model points to your target model (`glm-5.1:cloud`, etc.).
-5. `.env` has `LLM_MODEL` matching your selected model.
+5. `default_model_setting.model_id` points to the intended Ollama-backed model record.
 
 ## 7) Relevant code locations summary
 
