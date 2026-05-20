@@ -5,6 +5,7 @@ const request = require('supertest');
 const sinon = require('sinon');
 const Module = require('module');
 const Router = require('koa-router');
+const path = require('node:path');
 
 function loadModuleWithMocks(moduleRelativePath, stubs) {
   const modulePath = require.resolve(moduleRelativePath);
@@ -270,6 +271,7 @@ describe('Koa app router surface', () => {
   });
 
   it('streams file content with content headers through the app surface', async () => {
+    const fixturePath = path.resolve(__dirname, '../../package.json');
     const app = loadTestApp({
       Platform: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
       Model: { findOne: sinon.stub(), destroy: sinon.stub() },
@@ -282,7 +284,7 @@ describe('Koa app router surface', () => {
 
     const response = await request(app.callback())
       .post('/api/file/read')
-      .send({ path: '/home/levon/Downloads/lemonai/package.json' });
+      .send({ path: fixturePath });
 
     expect(response.status).to.equal(200);
     expect(response.headers['content-type']).to.equal('text/csv; charset=utf-8');
