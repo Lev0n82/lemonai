@@ -44,9 +44,23 @@ function buildTestRouter(dependencies) {
     '@src/models/Platform': dependencies.Platform,
     '@src/models/UserSearchSetting': dependencies.UserSearchSetting,
   });
+  const fileRoutes = loadModuleWithMocks('../../src/routers/file/file', {
+    '@src/models/File': dependencies.File,
+    '@src/utils/electron': { getDirpath: dependencies.getDirpath || (() => '/tmp/workspace') },
+  });
+  const editorRoutes = loadModuleWithMocks('../../src/routers/file/editor', {
+    '@src/utils/versionManager': dependencies.versionManager || {
+      quickCreateVersion: sinon.stub(),
+      getVersions: sinon.stub(),
+      switchToVersion: sinon.stub(),
+    },
+    '@src/utils/filePathHelper': { resolveAbsolutePath: dependencies.resolveAbsolutePath || (() => null) },
+  });
 
   router.use('/api/platform', platformRoutes);
   router.use('/api/default_model_setting', defaultModelSettingRoutes);
+  router.use('/api/file', fileRoutes);
+  router.use('/api/file', editorRoutes);
   return router;
 }
 
@@ -72,6 +86,8 @@ describe('Koa app router surface', () => {
     delete require.cache[require.resolve('../../src/app')];
     delete require.cache[require.resolve('../../src/routers/platform/platform')];
     delete require.cache[require.resolve('../../src/routers/default_model_setting/default_model_setting')];
+    delete require.cache[require.resolve('../../src/routers/file/file')];
+    delete require.cache[require.resolve('../../src/routers/file/editor')];
   });
 
   it('serves the root health route', async () => {
@@ -82,6 +98,7 @@ describe('Koa app router surface', () => {
       DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
       updateDefaultModel: sinon.stub(),
       UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
     });
 
     const response = await request(app.callback()).get('/');
@@ -99,6 +116,7 @@ describe('Koa app router surface', () => {
       DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
       updateDefaultModel: sinon.stub(),
       UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
     });
 
     const response = await request(app.callback())
@@ -131,6 +149,7 @@ describe('Koa app router surface', () => {
       },
       updateDefaultModel: sinon.stub(),
       UserSearchSetting: { findOne: sinon.stub().resolves({ id: 3 }) },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
     });
 
     const response = await request(app.callback()).get('/api/default_model_setting/check');
@@ -162,6 +181,7 @@ describe('Koa app router surface', () => {
       DefaultModelSetting,
       updateDefaultModel,
       UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
     });
 
     const response = await request(app.callback())
@@ -177,5 +197,96 @@ describe('Koa app router surface', () => {
       user_id: 1,
     })).to.equal(true);
     expect(updateDefaultModel.calledOnceWithExactly('assistant')).to.equal(true);
+  });
+
+  it('returns wrapped failure data when updating a missing platform', async () => {
+    const app = loadTestApp({
+      Platform: { findOne: sinon.stub().resolves(null), findAll: sinon.stub(), create: sinon.stub() },
+      Model: { findOne: sinon.stub(), destroy: sinon.stub() },
+      checkLlmApiAvailability: sinon.stub(),
+      DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
+      updateDefaultModel: sinon.stub(),
+      UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+    });
+
+    const response = await request(app.callback())
+      .put('/api/platform/999')
+      .send({ name: 'Missing platform' });
+
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      code: 1,
+      msg: 'Platform does not exist',
+      data: {},
+    });
+  });
+
+  it('returns wrapped failure data when editor update misses conversation_id', async () => {
+    const app = loadTestApp({
+      Platform: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+      Model: { findOne: sinon.stub(), destroy: sinon.stub() },
+      checkLlmApiAvailability: sinon.stub(),
+      DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
+      updateDefaultModel: sinon.stub(),
+      UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+      resolveAbsolutePath: sinon.stub().returns('/tmp/example.txt'),
+    });
+
+    const response = await request(app.callback())
+      .put('/api/file/editor')
+      .send({ path: 'example.txt', content: 'hello' });
+
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      code: 1,
+      msg: 'conversation_id is required',
+      data: null,
+    });
+  });
+
+  it('returns wrapped failure data when file read misses a path', async () => {
+    const app = loadTestApp({
+      Platform: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+      Model: { findOne: sinon.stub(), destroy: sinon.stub() },
+      checkLlmApiAvailability: sinon.stub(),
+      DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
+      updateDefaultModel: sinon.stub(),
+      UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+    });
+
+    const response = await request(app.callback())
+      .post('/api/file/read')
+      .send({});
+
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      code: 1,
+      msg: 'File path is required',
+      data: null,
+    });
+  });
+
+  it('streams file content with content headers through the app surface', async () => {
+    const app = loadTestApp({
+      Platform: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+      Model: { findOne: sinon.stub(), destroy: sinon.stub() },
+      checkLlmApiAvailability: sinon.stub(),
+      DefaultModelSetting: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub(), update: sinon.stub() },
+      updateDefaultModel: sinon.stub(),
+      UserSearchSetting: { findOne: sinon.stub() },
+      File: { findOne: sinon.stub(), findAll: sinon.stub(), create: sinon.stub() },
+    });
+
+    const response = await request(app.callback())
+      .post('/api/file/read')
+      .send({ path: '/home/levon/Downloads/lemonai/package.json' });
+
+    expect(response.status).to.equal(200);
+    expect(response.headers['content-type']).to.equal('text/csv; charset=utf-8');
+    expect(response.headers['content-disposition']).to.equal('attachment; filename=package.json');
+    expect(response.text).to.include('"name": "LemonAI"');
   });
 });
