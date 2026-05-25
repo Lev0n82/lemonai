@@ -9,6 +9,7 @@ const defaultActions = [
   ['write_file', ['path', 'content']],
   ['read_file', ['path']],
   ['revise_plan', ['mode', 'reason', 'tasks']],
+  ['pause_for_user_input', ['question', 'reason']],
   ['terminal_run', ['command', 'args']],
   ['web_search', ['topic', 'query', 'num_results']],
   ['browser', ['question']],

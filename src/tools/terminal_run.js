@@ -19,8 +19,11 @@ const TerminalRun = {
     },
     required: ["command"]
   },
-  getActionDescription({ command, args = "", cwd }) {
-    return `${command} ${args}`;
+  getActionDescription({ command = "", args = "", cwd }) {
+    if (!command) {
+      return 'Invalid terminal command: missing command value';
+    }
+    return `${command} ${args}`.trim();
   }
 };
 

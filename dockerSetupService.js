@@ -432,6 +432,12 @@ async function importDockerImage(imagePath) {
 
 // --- Function to check and run setup flow ---
 async function checkAndRunDockerSetup(mainWindow) {
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Development mode detected, skipping Docker setup gate.');
+        mainWindow.loadURL('http://localhost:5005');
+        return;
+    }
+
     mainWindow.loadFile('setup.html');
     console.log("Triggering checkAndRunDockerSetup")
     const initialSetupDone = store.get(DOCKER_SETUP_DONE_KEY, false);

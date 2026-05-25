@@ -50,6 +50,9 @@ const WebSearchTool = {
         try {
             // 如果设置了，默认走设置
             let userSearchSetting = await UserSearchSetting.findOne()
+            if (!userSearchSetting) {
+                throw new Error('Web search provider settings are not configured. Configure a search provider or avoid web search for this task.');
+            }
             num_results = userSearchSetting.dataValues.result_count || 3
 
             console.log(`[WebSearchTool] Searching for: "${query}" (max ${num_results} results)`);
@@ -63,6 +66,9 @@ const WebSearchTool = {
 
             // 判断当前设置
             const searchProvider = await SearchProvider.findOne({ where: { id: userSearchSetting.provider_id } })
+            if (!searchProvider) {
+                throw new Error('Configured web search provider was not found. Update search provider settings before using web search.');
+            }
             let json = {}
             let content = ''
             let obj
@@ -113,6 +119,9 @@ const WebSearchTool = {
 async function doTalivySearch(query, num_results) {
     let userSearchSetting = await UserSearchSetting.findOne()
     const userProviderConfig = await UserProviderConfig.findOne({ where: { provider_id: userSearchSetting.provider_id } })
+    if (!userProviderConfig?.base_config?.api_key) {
+        throw new Error('Tavily search is not configured. Add the Tavily API key in search provider settings before using web search.');
+    }
     let tavily_api_key = userProviderConfig.base_config.api_key
 
     const talivy = new TalivySearch({ key: tavily_api_key });
@@ -137,6 +146,9 @@ async function doLemonSearch(query, num_results, conversation_id) {
 async function doCloudswaySearch(query, num_results) {
     let userSearchSetting = await UserSearchSetting.findOne()
     const userProviderConfig = await UserProviderConfig.findOne({ where: { provider_id: userSearchSetting.provider_id } })
+    if (!userProviderConfig?.base_config?.api_key) {
+        throw new Error('Cloudsway search is not configured. Add the Cloudsway API key in search provider settings before using web search.');
+    }
     let cloudsway_access_key = userProviderConfig.base_config.api_key
     let cloudsway_endpoint = userProviderConfig.base_config.endpoint
     const cloudsway = new CloudswaySearch({ access_key: cloudsway_access_key, endpoint: cloudsway_endpoint });
@@ -153,6 +165,9 @@ async function doMetasoSearch(query, num_results) {
     try {
         let userSearchSetting = await UserSearchSetting.findOne()
         const userProviderConfig = await UserProviderConfig.findOne({ where: { provider_id: userSearchSetting.provider_id } })
+        if (!userProviderConfig?.base_config) {
+            throw new Error('Metaso search is not configured. Add the Metaso API key and endpoint in search provider settings before using web search.');
+        }
         let metaso_api_key = userProviderConfig.base_config.api_key
         let metaso_endpoint = userProviderConfig.base_config.endpoint
         

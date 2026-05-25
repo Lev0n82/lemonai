@@ -78,7 +78,14 @@
   </div>
   <!-- 任务异常 完成 -->
   <div v-else-if="message?.meta?.action_type === 'error'" class="error">
-    <span>Task stopped, Please try another task</span>
+    <Failure style="margin-right: 8px; display: inline-block; vertical-align: middle;" /><span>{{ message?.content || "Task stopped, Please try another task" }}</span>
+  </div>
+  <div v-else-if="message?.meta?.action_type === 'question' && message?.meta?.json?.blocked_state" class="blocked">
+    <Stop />
+    <div class="blocked-copy">
+      <span class="blocked-title">Execution blocked: waiting for required input</span>
+      <span class="blocked-body">{{ message?.content }}</span>
+    </div>
   </div>
 
   <Markdown v-else-if="message.role === 'assistant'" :content="content" />
@@ -439,6 +446,41 @@ const handleDocumentQueryClick = (message) => {
   line-height: 18px;
   font-size: 13px;
   align-items: center;
+}
+
+.blocked {
+  display: flex;
+  width: 100%;
+  gap: 0.75rem;
+  padding: 10px 14px;
+  border-radius: 14px;
+  color: #7c2d12;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  align-items: flex-start;
+
+  svg {
+    min-width: 16px;
+    min-height: 16px;
+    margin-top: 2px;
+  }
+}
+
+.blocked-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.blocked-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.blocked-body {
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .credits {

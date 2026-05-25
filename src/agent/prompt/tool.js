@@ -37,6 +37,9 @@ ${toolDescription}
 <tool finish>
 { "description": "Signal that a task is complete and provide a completion message", "name": "finish", "params": { "type": "object", "properties": { "message": { "description": "Explanation of the task completion result", "type": "string" } }, "required": ["message"] } }
 </tool>
+<tool pause_for_user_input>
+{ "description": "Pause execution and ask the human for required input when an essential prerequisite such as a target URL, credential, secret, or environment choice is missing", "name": "pause_for_user_input", "params": { "type": "object", "properties": { "question": { "description": "The exact question the human must answer before execution can continue", "type": "string" }, "reason": { "description": "Short reason why execution is blocked", "type": "string" } }, "required": ["question"] } }
+</tool>
 </tool_list>
 
 <tool_call_guidelines>
@@ -46,6 +49,7 @@ Follow these guidelines regarding tool calls
 - You MUST only use the tools explicitly provided in the tool list. Do not treat file names or code functions as tool names. The available tool names:
 - ${Object.keys(tools).join('\n  - ')}
 - finish
+- pause_for_user_input
 </tool_call_guidelines>
 
 </tools>`;

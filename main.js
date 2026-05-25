@@ -3,6 +3,7 @@
 const { app, BrowserWindow,ipcMain,shell } = require('electron');
 const path = require('path');
 const http = require('http');
+const net = require('net');
 const { URL } = require('url'); // Node.js 的 URL 类
 const { exec, spawn } = require('child_process');
 import { initDockerSetupService, checkAndRunDockerSetup, DOCKER_SETUP_DONE_KEY } from './dockerSetupService.js';
@@ -105,6 +106,65 @@ if (!gotTheLock) {
   
     process.env.PATH = Array.from(customPaths).join(delimiter);
   }
+
+	 function isPortOpen(port, host = '127.0.0.1') {
+	   return new Promise((resolve) => {
+	     const socket = net.createConnection({ port, host });
+
+	     socket.once('connect', () => {
+	       socket.destroy();
+	       resolve(true);
+	     });
+
+	     socket.once('error', () => {
+	       resolve(false);
+	     });
+	   });
+	 }
+
+	 async function waitForPort(port, timeoutMs = 10000) {
+	   const deadline = Date.now() + timeoutMs;
+
+	   while (Date.now() < deadline) {
+	     if (await isPortOpen(port)) {
+	       return true;
+	     }
+
+	     await new Promise((resolve) => setTimeout(resolve, 200));
+	   }
+
+	   return false;
+	 }
+
+	 async function ensureBackendStarted() {
+	   const backendPort = Number(process.env.PORT || '3000');
+	   const backendEntry = path.join(__dirname, '../bin/www');
+
+	   if (await isPortOpen(backendPort)) {
+	     console.log(`Backend already listening on port ${backendPort}, reusing existing process.`);
+	     return;
+	   }
+
+	   console.log('Spawning backend child process...');
+	   backendProcess = spawn(process.execPath, [backendEntry], {
+	     cwd: path.join(__dirname, '..'),
+	     env: process.env,
+	     stdio: 'inherit',
+	   });
+
+	   backendProcess.once('exit', (code, signal) => {
+	     console.log('Backend child process exited.', { code, signal });
+	     backendProcess = null;
+	   });
+
+	 const backendReady = await waitForPort(backendPort);
+
+	   if (!backendReady) {
+	     throw new Error(`Backend failed to start on port ${backendPort}`);
+	   }
+
+	   console.log(`Backend process ready on port ${backendPort}.`);
+	 }
 
 
   function  createWindow() {
@@ -298,17 +358,13 @@ if (!gotLock) {
     require(path.join(__dirname, '../src/models/sync.js'));
     console.log('Database initialized.');
     
-    // 启动后端进程 (时机可能需要调整，确保后端在 Docker 就绪后才能正常工作)
-    console.log('Spawning backend process...');
-    try {
-      // @ts-ignore
-      // 确保你的 '../bin/www' 文件能够通过 require 正常启动后端服务
-      require(path.join(__dirname, '../bin/www'));
-      console.log('Backend process started.');
-    } catch (err) {
-      console.error('Failed to start backend service:', err);
-      // 考虑在这里处理后端启动失败的情况
-    }
+	    // 启动后端进程 (时机可能需要调整，确保后端在 Docker 就绪后才能正常工作)
+	    try {
+	      await ensureBackendStarted();
+	      console.log('Backend process started.');
+	    } catch (err) {
+	      console.error('Failed to start backend service:', err);
+	    }
 
 
     // 创建主窗口
@@ -369,10 +425,9 @@ if (!gotLock) {
 
   app.on('before-quit', () => {
     console.log('App quitting, killing backend process...');
-    // 如果你的后端是通过 spawn 启动的，在这里杀死进程
-    // if (backendProcess && !backendProcess.killed) {
-    //     backendProcess.kill();
-    // }
+	   if (backendProcess && !backendProcess.killed) {
+	     backendProcess.kill();
+	   }
   });
 
   app.on('activate', () => {

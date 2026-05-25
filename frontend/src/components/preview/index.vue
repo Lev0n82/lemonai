@@ -44,7 +44,11 @@
            
           <Terminal class="terminal" v-if="type === 'terminal_run'" :isPreview="true" v-model:content="fileContent"/>
           <!-- 浏览器展示 -->
-          <BrowserImage v-else-if="type === 'browser'" :content="browserImageData"/>
+          <BrowserImage
+            v-else-if="type === 'browser'"
+            :content="browserImageData"
+            :show-screensaver="showBrowserScreensaver"
+          />
           <!-- 文件展示 -->
           <FileContent v-else-if="(((type === 'write_code' || type === 'read_file') && fileName ) || type === 'mcp_tool' || type === 'document_query' )" :filePath="fileName"
                        :file-content="fileContent"/>
@@ -416,6 +420,14 @@ const maxTime = computed(() => {
     msgQueryID.value = messageQueue.value.length - 1;
   }
   return messageQueue.value.length === 0 ? 0 : Math.floor(new Date(messageQueue.value[messageQueue.value.length - 1].timestamp).getTime());
+});
+
+const showBrowserScreensaver = computed(() => {
+  return (
+    type.value === 'browser' &&
+    isRealTime.value &&
+    msgQueryID.value === messageQueue.value.length - 1
+  );
 });
 
 const handleTimeChange = (newTime) => {

@@ -1,11 +1,21 @@
 <template>
   <div class="image-container">
+    <div v-if="showScreensaver" class="baby-screensaver" aria-hidden="true">
+      <div class="baby-track">
+        <div class="baby-wrap">
+          <div class="baby">
+            <DancingBabyMascot class="mascot" />
+          </div>
+        </div>
+      </div>
+    </div>
     <img :src="formattedImageData" alt="Displaying image" />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import DancingBabyMascot from '@/assets/browser/dancing-baby-mascot.svg';
 
 const props = defineProps({
   content: {
@@ -16,6 +26,10 @@ const props = defineProps({
   imageType: {
     type: String,
     default: 'image/jpeg' // 根据你的实际图片类型调整，'image/png', 'image/gif' 等
+  },
+  showScreensaver: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -46,15 +60,84 @@ const formattedImageData = computed(() => {
 
 <style lang="scss" scoped>
 .image-container {
+  position: relative;
   width: 100%;
   display: flex;
   justify-content: center;
+  overflow: hidden;
   
   img {
     max-width: 100%;
     height: auto;
     object-fit: contain;
     border: 1px solid #dadada;
+  }
+}
+
+.baby-screensaver {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.baby-track {
+  position: absolute;
+  inset: 0;
+  animation: drift-x 7.5s linear infinite alternate;
+}
+
+.baby-wrap {
+  position: absolute;
+  top: 8%;
+  left: 0;
+  animation: drift-y 5.8s ease-in-out infinite alternate;
+}
+
+.baby {
+  opacity: 0.5;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.18));
+  position: relative;
+  width: clamp(86px, 10vw, 136px);
+  height: clamp(138px, 15vw, 200px);
+  animation: baby-turn 5s ease-in-out infinite alternate;
+  user-select: none;
+}
+
+.mascot {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+@keyframes drift-x {
+  from {
+    transform: translateX(4%);
+  }
+
+  to {
+    transform: translateX(calc(100% - 140px));
+  }
+}
+
+@keyframes drift-y {
+  from {
+    transform: translateY(0%);
+  }
+
+  to {
+    transform: translateY(calc(100% - 180px));
+  }
+}
+
+@keyframes baby-turn {
+  from {
+    transform: rotate(-8deg) scale(0.98);
+  }
+
+  to {
+    transform: rotate(8deg) scale(1.03);
   }
 }
 </style>

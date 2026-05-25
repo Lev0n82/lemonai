@@ -36,6 +36,14 @@ const runCommand = (command, args, cwd) => {
 
 const terminal_run = async (action, uuid) => {
   const { command, args = [], cwd = '.' } = action.params;
+  if (!command || typeof command !== 'string' || !command.trim()) {
+    return {
+      uuid,
+      status: 'failure',
+      error: 'terminal_run requires a non-empty command string.',
+      content: '',
+    };
+  }
   const executionDir = await restrictFilepath(cwd);
   try {
     const result = await runCommand(command, args, executionDir);

@@ -20,7 +20,7 @@
           :key="item.mode"
           class="menu-button"
           :class="{
-            active: !item.isAgentsHistory && (item.isStore ? isStorePage : (!isStorePage && currentWorkMode === item.mode)),
+            active: isMenuItemActive(item),
             'no-hover': item.isAgentsHistory
           }"
           @click="handleMenuClick(item)"
@@ -147,6 +147,15 @@ const menuItems = ref([
     description: 'Smart routing',
     showTooltip: false,
     isStore: false
+  },
+  {
+    mode: 'qa-test',
+    label: 'QA / Test',
+    icon: AiChat,
+    description: 'ABT browser testing',
+    showTooltip: false,
+    isStore: false,
+    route: '/qa-test'
   },
   {
     mode: 'store',
@@ -309,12 +318,34 @@ function toStore() {
 function handleMenuClick(item) {
   if (item.isStore) {
     toStore()
+  } else if (item.route) {
+    if (isMobile.value && isShowMenu.value) {
+      isShowMenu.value = false
+      emitter.emit('mobileMenuStateChange', false)
+    }
+    router.push(item.route)
   } else if (item.isAgentsHistory) {
     // 点击 Agents History 触发搜索
     openAgentSearch()
   } else {
     changeModeWithWorkMode('task', item.mode)
   }
+}
+
+function isMenuItemActive(item) {
+  if (item.isAgentsHistory) {
+    return false
+  }
+
+  if (item.isStore) {
+    return isStorePage.value
+  }
+
+  if (item.route) {
+    return route.path === item.route
+  }
+
+  return !isStorePage.value && currentWorkMode.value === item.mode
 }
 
 //toUserCase

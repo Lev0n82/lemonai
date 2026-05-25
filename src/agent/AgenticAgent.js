@@ -349,6 +349,17 @@ class AgenticAgent {
             memorized: result.memorized || '',
             params: result.params || {}
           });
+          await this._publishMessage({
+            action_type: 'question',
+            status: 'pause_for_user_input',
+            content: result.params.question || 'Execution is blocked until required input is provided.',
+            json: {
+              blocked_state: true,
+              blocked_reason: result.params.reason || 'missing prerequisite',
+              ...result.params
+            },
+            task_id: task.id
+          });
           await this.stop(false);
           return;
         }

@@ -13,6 +13,12 @@ const routes = [
         name: "lemon",
         component: () => import(/* webpackChunkName: "lemon" */ "@/view/lemon/components/ChatPanel.vue"),
         meta: { verify: true }
+      },
+      {
+        path: "qa-test",
+        name: "qa-test",
+        component: () => import("@/view/qa/index.vue"),
+        meta: { verify: true }
       }
     ]
   },
