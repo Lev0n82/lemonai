@@ -63,6 +63,25 @@ async function sendMessage(question, conversationId, files, mcp_server_ids = [],
     if (workMode == "twins") {
         return await sendTwinsMessage(question, conversationId, files, mcp_server_ids);
     }
+
+    // Check if the selected model is a video-generation model
+    try {
+        const modelListStr = localStorage.getItem('modelList');
+        if (modelListStr) {
+            const modelList = JSON.parse(modelListStr);
+            const selectedModel = modelList.find(m => String(m.id) === String(model_id.value));
+            const types = selectedModel?.model_types;
+            const isVideo = Array.isArray(types)
+                ? types.includes('video')
+                : (typeof types === 'string' && (types === 'video' || types.includes('"video"')));
+            if (isVideo) {
+                return await sendVideoMessage(question, conversationId);
+            }
+        }
+    } catch (e) {
+        console.warn('Video model check failed, falling back to normal flow:', e);
+    }
+
     const abortController = new AbortController();
     let fileIds = files.map(file => file.id);
     //判断当前会话是否存在
@@ -177,6 +196,65 @@ async function sendMessage(question, conversationId, files, mcp_server_ids = [],
         getUserInfo();
     });
 
+}
+
+// Video generation via local FastAPI server
+async function sendVideoMessage(question, conversationId) {
+    let chat = chatStore.list.find((c) => c.conversation_id == conversationId);
+    if (chat) chat.status = 'running';
+
+    chatStore.handleInitMessage(question, []);
+
+    const loadingId = uuid();
+    chatStore.messages.push({
+        id: loadingId,
+        role: 'assistant',
+        content: 'Generating video…',
+        meta: { action_type: 'update_status' },
+        is_temp: true,
+    });
+
+    let baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_SERVICE_URL || 'http://localhost:3000');
+
+    try {
+        const res = await fetch(`${baseURL}/api/video/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: question, model_id: model_id.value }),
+        });
+        const data = await res.json();
+
+        const idx = chatStore.messages.findIndex(m => m.id === loadingId);
+        if (idx !== -1) chatStore.messages.splice(idx, 1);
+
+        if (data.video_url) {
+            chatStore.messages.push({
+                id: uuid(),
+                role: 'assistant',
+                content: data.video_url,
+                meta: { action_type: 'video' },
+            });
+        } else {
+            chatStore.messages.push({
+                id: uuid(),
+                role: 'assistant',
+                content: data.error || 'Video generation failed',
+                meta: { action_type: 'error' },
+            });
+        }
+    } catch (err) {
+        const idx = chatStore.messages.findIndex(m => m.id === loadingId);
+        if (idx !== -1) chatStore.messages.splice(idx, 1);
+        chatStore.messages.push({
+            id: uuid(),
+            role: 'assistant',
+            content: `Video generation error: ${err.message}`,
+            meta: { action_type: 'error' },
+        });
+    } finally {
+        if (chat) chat.status = 'done';
+        getUserInfo();
+    }
 }
 
 // Chat 模式 sendMessage

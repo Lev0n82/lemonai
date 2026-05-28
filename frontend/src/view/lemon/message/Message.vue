@@ -60,9 +60,13 @@
     <LoadingOutlined />
     <span style="margin-left: 5px">{{ content }}</span>
   </div>
-  <!-- 代码编辑 -->
+  <!-- coding -->
   <div v-else-if="message?.meta?.action_type === 'coding'">
     <CodingMessage :message="message" />
+  </div>
+  <!-- video -->
+  <div v-else-if="message?.meta?.action_type === 'video'" class="video-output">
+    <video controls :src="content" style="max-width:100%;border-radius:8px;" />
   </div>
   <!-- 停止 -->
   <div v-else-if="message?.meta?.action_type === 'stop'" class="stop">

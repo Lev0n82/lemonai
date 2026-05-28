@@ -55,6 +55,9 @@
             <a-checkbox class="checkbox-item" value="reasoning">
               {{ $t('setting.modelService.typeReasoning') }}
             </a-checkbox>
+            <a-checkbox class="checkbox-item" value="video">
+              {{ $t('setting.modelService.typeVideo') || 'Video' }}
+            </a-checkbox>
           </a-checkbox-group>
         </a-form-item>
       </a-form>

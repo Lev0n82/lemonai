@@ -93,7 +93,8 @@ import {
   ToolOutlined,
   GlobalOutlined,
   BranchesOutlined,
-  CameraOutlined
+  CameraOutlined,
+  VideoCameraOutlined
 } from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 import ModelInfo from '@/components/platforms/modelinfo.vue';
@@ -192,6 +193,10 @@ const typeIconMap = {
     ['vision']: {
       component: CameraOutlined,
       class: 'type-vision'
+    },
+    ['video']: {
+      component: VideoCameraOutlined,
+      class: 'type-video'
     }
   };
 

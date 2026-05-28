@@ -208,6 +208,34 @@ const dataUpdate = async () => {
   await Platform.update({ is_enabled: true }, { where: { name: 'Lemon' } })
   SearchProviderTable.destroy({ where: { name: 'Baidu' } });
   SearchProviderTable.destroy({ where: { name: 'Bing' } });
+
+  // v0.1.4 => v0.1.5 — Local Video Gen platform
+  const localVideoGenPlatform = await Platform.findOne({ where: { name: 'Local Video Gen' } });
+  if (!localVideoGenPlatform) {
+    const videoGenEntry = defaultData.find(item => item.name === 'Local Video Gen');
+    if (videoGenEntry) {
+      const platformData = {
+        name: videoGenEntry.name,
+        logo_url: videoGenEntry.logo_url,
+        source_type: 'system',
+        api_key: videoGenEntry.api_key,
+        api_url: videoGenEntry.api_url,
+        api_version: videoGenEntry.api_version,
+        key_obtain_url: videoGenEntry.key_obtain_url,
+      };
+      const platform = await Platform.create(platformData);
+      const modelsData = videoGenEntry.models.map(model => ({
+        // @ts-ignore
+        platform_id: platform.id,
+        logo_url: model.logo_url,
+        model_id: model.model_id,
+        model_name: model.model_name,
+        group_name: model.group_name,
+        model_types: model.model_types,
+      }));
+      await Model.bulkCreate(modelsData);
+    }
+  }
 }
 
 const sync = async () => {
