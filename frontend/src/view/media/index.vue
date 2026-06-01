@@ -156,17 +156,31 @@ onMounted(() => {
   loadGallery()
 })
 
-function loadModels() {
-  const raw = localStorage.getItem('modelList')
-  if (!raw) return
+async function loadModels() {
   try {
-    const list = JSON.parse(raw)
+    const res = await fetch(`${baseURL}/api/model/enabled`)
+    const data = await res.json()
+    const list = Array.isArray(data) ? data : (data.data || data.list || data.models || [])
     allModels.value = list.filter(m => {
-      const types = m.model_types || []
+      const types = Array.isArray(m.model_types)
+        ? m.model_types
+        : (() => { try { return JSON.parse(m.model_types || '[]') } catch { return [] } })()
       return types.includes('video') || types.includes('image')
     })
   } catch {
-    allModels.value = []
+    // fallback to localStorage cache
+    try {
+      const raw = localStorage.getItem('modelList')
+      if (raw) {
+        const list = JSON.parse(raw)
+        allModels.value = list.filter(m => {
+          const types = Array.isArray(m.model_types)
+            ? m.model_types
+            : (() => { try { return JSON.parse(m.model_types || '[]') } catch { return [] } })()
+          return types.includes('video') || types.includes('image')
+        })
+      }
+    } catch { allModels.value = [] }
   }
 }
 
