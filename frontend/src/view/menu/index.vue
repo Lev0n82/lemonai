@@ -49,7 +49,7 @@
 
       <!-- 底部用户区域 -->
       <div class="menu-bottom">
-        <UserVersion :isCollapsed="isCollapsed" :chats="chats" />
+        <UserVersion :isCollapsed="isMenuCollapsed" :chats="chats" />
       </div>
       <FooterSocial />
     </div>
@@ -80,6 +80,7 @@ import ChevronLeft from '@/assets/svg/chevron-left.svg'
 import ChevronRight from '@/assets/svg/chevron-right.svg'
 import AgentsHistoryIcon from '@/assets/svg/agents-history-icon.svg'
 import SearchAgentsIcon from '@/assets/svg/search-agents-icon.svg'
+import MediaIcon from '@/assets/svg/media.svg'
 
 // 组件导入
 import Logo from '@/components/logo.vue'
@@ -94,7 +95,7 @@ import { storeToRefs } from 'pinia'
 import { useChatStore } from '@/store/modules/chat'
 import { useUserStore } from '@/store/modules/user.js'
 import emitter from '@/utils/emitter'
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, markRaw, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
@@ -118,7 +119,7 @@ const menuItems = ref([
   {
     mode: 'twins',
     label: 'Twins Chat',
-    icon: TwinsChat,
+    icon: markRaw(TwinsChat),
     description: 'Dual AI perspective',
     showTooltip: false,
     isStore: false,
@@ -127,7 +128,7 @@ const menuItems = ref([
   {
     mode: 'task',
     label: 'Evolving Agent',
-    icon: SuperAgent, // 暂时使用 SuperAgent 图标，后续替换
+    icon: markRaw(SuperAgent), // 暂时使用 SuperAgent 图标，后续替换
     description: 'Goal-driven, Self-improving',
     showTooltip: false,
     isStore: false
@@ -135,7 +136,7 @@ const menuItems = ref([
   {
     mode: 'chat',
     label: 'AI Chat',
-    icon: AiChat,
+    icon: markRaw(AiChat),
     description: 'Instant Q&A',
     showTooltip: false,
     isStore: false
@@ -143,7 +144,7 @@ const menuItems = ref([
   {
     mode: 'auto',
     label: 'Adaptive',
-    icon: Adaptive, // 暂时使用 SuperAgent 图标，后续替换
+    icon: markRaw(Adaptive), // 暂时使用 SuperAgent 图标，后续替换
     description: 'Smart routing',
     showTooltip: false,
     isStore: false
@@ -151,7 +152,7 @@ const menuItems = ref([
   {
     mode: 'qa-test',
     label: 'QA / Test',
-    icon: AiChat,
+    icon: markRaw(AiChat),
     description: 'ABT browser testing',
     showTooltip: false,
     isStore: false,
@@ -160,16 +161,24 @@ const menuItems = ref([
   {
     mode: 'store',
     label: 'Agent Store',
-    icon: Store,
+    icon: markRaw(Store),
     description: '',
     showTooltip: false,
     isStore: true
   },
   {
+    mode: 'media',
+    label: 'Multimedia',
+    icon: markRaw(MediaIcon),
+    description: 'Generate images & videos',
+    showTooltip: false,
+    route: '/media'
+  },
+  {
     mode: 'agentsHistory',
     label: 'Agents History',
-    icon: AgentsHistoryIcon,
-    rightIcon: SearchAgentsIcon,
+    icon: markRaw(AgentsHistoryIcon),
+    rightIcon: markRaw(SearchAgentsIcon),
     description: '',
     showTooltip: false,
     isStore: false,

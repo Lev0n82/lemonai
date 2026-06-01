@@ -507,7 +507,7 @@ emitter.on('fresh-pages', (value) => {
 .model-service {
   padding: 16px;
   height: 100%;
-  overflow-y: hidden;
+  overflow-y: auto;
 }
 
 .model-service-container {

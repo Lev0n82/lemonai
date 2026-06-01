@@ -1,4 +1,3 @@
-import path from 'path';
 import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 
 const routes = [
@@ -18,6 +17,12 @@ const routes = [
         path: "qa-test",
         name: "qa-test",
         component: () => import("@/view/qa/index.vue"),
+        meta: { verify: true }
+      },
+      {
+        path: "media",
+        name: "media",
+        component: () => import("@/view/media/index.vue"),
         meta: { verify: true }
       }
     ]
@@ -124,8 +129,6 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('access_token');
-  console.log("import.meta.env.VITE_IS_CLIENT === ",import.meta.env.VITE_IS_CLIENT);
   const { meta = {} } = to;
   // If route requires authentication and no token exists, redirect to login
   // if (meta.verify && !token) {
